@@ -65,6 +65,7 @@ typedef struct {
   double min_delay;
   double asymmetry;
   double offset;
+  int ut1;
 } SourceParameters;
 
 #define SRC_DEFAULT_PORT 123

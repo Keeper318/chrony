@@ -77,6 +77,7 @@ CPS_ParseNTPSourceAdd(char *line, CPS_NTP_Source *src)
   src->params.min_delay = 0.0;
   src->params.asymmetry = SRC_DEFAULT_ASYMMETRY;
   src->params.offset = 0.0;
+  src->params.ut1 = 0;
 
   hostname = line;
   line = CPS_SplitWord(line);
@@ -182,6 +183,8 @@ CPS_ParseNTPSourceAdd(char *line, CPS_NTP_Source *src)
     } else if (!strcasecmp(cmd, "presend")) {
       if (sscanf(line, "%d%n", &src->params.presend_minpoll, &n) != 1)
         return 0;
+    } else if (!strcasecmp(cmd, "ut1")) {
+      src->params.ut1 = 1;
     } else if (!strcasecmp(cmd, "version")) {
       if (sscanf(line, "%d%n", &src->params.version, &n) != 1)
         return 0;

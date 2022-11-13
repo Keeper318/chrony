@@ -174,4 +174,7 @@ extern int CNF_GetNtsTrustedCertsPaths(const char ***paths, uint32_t **ids);
 extern int CNF_GetNoSystemCert(void);
 extern int CNF_GetNoCertTimeCheck(void);
 
+extern int CNF_GetUT1(void);
+extern double CNF_GetUT1Offset(void);
+
 #endif /* GOT_CONF_H */

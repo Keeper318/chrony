@@ -85,6 +85,7 @@ static void parse_smoothtime(char *);
 static void parse_source(char *line, char *type, int fatal);
 static void parse_sourcedir(char *);
 static void parse_tempcomp(char *);
+static void parse_ut1(char *);
 
 /* ================================================== */
 /* Configuration variables */
@@ -320,6 +321,12 @@ typedef struct {
 
 /* Array of NTP_Broadcast_Destination */
 static ARR_Instance broadcasts;
+
+/* Flag set if UT1 mode is enabled */
+static int ut1 = 0;
+
+/* dUT1 constant */
+static double ut1_offset = 0.0; /* in seconds */
 
 /* ================================================== */
 
@@ -739,6 +746,8 @@ CNF_ParseLine(const char *filename, int number, char *line)
     parse_tempcomp(p);
   } else if (!strcasecmp(command, "user")) {
     parse_string(p, &user);
+  } else if (!strcasecmp(command, "ut1")) {
+    parse_ut1(p);
   } else if (!strcasecmp(command, "commandkey") ||
              !strcasecmp(command, "generatecommandkey") ||
              !strcasecmp(command, "linux_freq_scale") ||
@@ -1514,6 +1523,15 @@ parse_hwtimestamp(char *line)
 
   if (!maxpoll_set)
     iface->maxpoll = iface->minpoll + 1;
+}
+
+/* ================================================== */
+
+static void
+parse_ut1(char *line)
+{
+  ut1 = 1;
+  parse_double(line, &ut1_offset);
 }
 
 /* ================================================== */
@@ -2661,4 +2679,20 @@ int
 CNF_GetNoCertTimeCheck(void)
 {
   return no_cert_time_check;
+}
+
+/* ================================================== */
+
+int
+CNF_GetUT1(void)
+{
+  return ut1;
+}
+
+/* ================================================== */
+
+double
+CNF_GetUT1Offset(void)
+{
+  return ut1_offset;
 }
