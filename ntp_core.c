@@ -223,6 +223,9 @@ struct NCR_Instance_Record {
 
   /* Report from last valid response and packet/timestamp statistics */
   RPT_NTPReport report;
+
+  /* Flag indicating the source is in UT1 mode */
+  int ut1;
 };
 
 typedef struct {
@@ -711,6 +714,8 @@ NCR_CreateInstance(NTP_Remote_Address *remote_addr, NTP_Source_Type type,
   zero_local_timestamp(&result->local_tx);
   result->burst_good_samples_to_go = 0;
   result->burst_total_samples_to_go = 0;
+
+  result->ut1 = params->ut1;
   
   NCR_ResetInstance(result);
 
@@ -2179,6 +2184,9 @@ process_response(NCR_Instance inst, int saved, NTP_Local_Address *local_addr,
 
     /* Apply configured correction */
     sample.offset += inst->offset_correction;
+
+    /* Apply dUT1 if the remote source works in another time scale */
+    sample.offset += CNF_GetUT1Offset() * (CNF_GetUT1() - inst->ut1);
 
     /* We treat the time of the sample as being midway through the local
        measurement period.  An analysis assuming constant relative

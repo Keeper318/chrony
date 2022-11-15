@@ -252,6 +252,9 @@ REF_Initialise(void)
   leap_timeout_id = 0;
   leap_in_progress = 0;
   leap_mode = CNF_GetLeapSecMode();
+  /* Ignore leap second in UT1 mode */
+  if (CNF_GetUT1())
+    leap_mode = REF_LeapModeIgnore;
   /* Switch to step mode if the system driver doesn't support leap */
   if (leap_mode == REF_LeapModeSystem && !LCL_CanSystemLeap())
     leap_mode = REF_LeapModeStep;
