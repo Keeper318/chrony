@@ -29,6 +29,7 @@
 #define GOT_CONF_H
 
 #include "addressing.h"
+#include "local.h"
 #include "reference.h"
 #include "sources.h"
 
@@ -176,5 +177,6 @@ extern int CNF_GetNoCertTimeCheck(void);
 
 extern int CNF_GetUT1(void);
 extern double CNF_GetUT1Offset(void);
+extern void CNF_SetUT1FromBulletinA(void);
 
 #endif /* GOT_CONF_H */

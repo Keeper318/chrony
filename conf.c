@@ -49,6 +49,7 @@
 #define MAX_LINE_LENGTH 2048
 #define MAX_CONF_DIRS 10
 #define MAX_INCLUDE_LEVEL 10
+#define BULLETIN_A_CSV_SEPARATOR ";"
 
 /* ================================================== */
 /* Forward prototypes */
@@ -327,6 +328,9 @@ static int ut1 = 0;
 
 /* dUT1 constant */
 static double ut1_offset = 0.0; /* in seconds */
+
+/* Path to IERS Bulletin A CSV file which stores dUT1 values */
+static char *bulletin_a_path = NULL;
 
 /* ================================================== */
 
@@ -1531,7 +1535,10 @@ static void
 parse_ut1(char *line)
 {
   ut1 = 1;
-  parse_double(line, &ut1_offset);
+  if (sscanf(line, "%lf", &ut1_offset) != 1) {
+      bulletin_a_path = line;
+      CNF_SetUT1FromBulletinA();
+  }
 }
 
 /* ================================================== */
@@ -2695,4 +2702,65 @@ double
 CNF_GetUT1Offset(void)
 {
   return ut1_offset;
+}
+
+/* ================================================== */
+
+void
+CNF_SetUT1FromBulletinA(void)
+{
+  FILE *in;
+  char line[256];
+  int i, mjd, mjd_today, mjd_index, dut1_index, read_dut1;
+  char *token, *token_end, *endptr;
+  struct timespec now;
+
+  in = UTI_OpenFile(NULL, bulletin_a_path, NULL, 'R', 0);
+  if (fgets(line, sizeof(line), in) == NULL)
+    LOG_FATAL("Error reading Bulletin A");
+  mjd_index = dut1_index = -1;
+  token = strtok(line, BULLETIN_A_CSV_SEPARATOR);
+  for (i = 0; token != NULL && (mjd_index == -1 || dut1_index == -1);
+       i++, token = strtok(NULL, BULLETIN_A_CSV_SEPARATOR)) {
+    if (!strcmp(token, "MJD"))
+      mjd_index = i;
+    else if (!strcmp(token, "UT1-UTC"))
+      dut1_index = i;
+  }
+
+  LCL_ReadRawTime(&now);
+  mjd = INT_MIN;
+  mjd_today = now.tv_sec / 86400 + 40587;
+  while (fgets(line, sizeof(line), in)) {
+    read_dut1 = 0;
+    token = line;
+    for (i = 0; i <= mjd_index || i <= dut1_index; i++) {
+      token_end = strchr(token, BULLETIN_A_CSV_SEPARATOR[0]);
+      if (token_end != NULL)
+        *token_end = '\0';
+      if (i == mjd_index)
+        mjd = strtol(token, NULL, 10);
+      else if (i == dut1_index) {
+        ut1_offset = strtod(token, &endptr);
+        read_dut1 = *endptr == '\0';
+      }
+      if (token_end == NULL)
+        break;
+      token = token_end + 1;
+    }
+    if (mjd >= mjd_today) {
+      if (!read_dut1)
+        LOG_FATAL("Invalid Bulletin A");
+      if (mjd > mjd_today)
+        LOG(LOGS_WARN, "Bulletin A is too new, using the earliest available date");
+      break;
+    }
+  }
+
+  if (mjd == INT_MIN)
+    LOG_FATAL("Invalid Bulletin A");
+  LOG(LOGS_INFO, "Got dUT1 = %g from Bulletin A", ut1_offset);
+  if (mjd < mjd_today)
+    LOG(LOGS_WARN, "Bulletin A is too old, using the latest available date");
+  fclose(in);
 }
