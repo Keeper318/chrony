@@ -1532,12 +1532,26 @@ parse_hwtimestamp(char *line)
 /* ================================================== */
 
 static void
+set_dut1_adjust_timeout()
+{
+  struct timespec when;
+
+  LCL_ReadRawTime(&when);
+  // Set to the next midnight
+  when.tv_sec = (when.tv_sec / (24 * 3600) + 1) * (24 * 3600);
+  when.tv_nsec = 0;
+  SCH_AddTimeout(&when, CNF_SetUT1FromBulletinA, NULL);
+}
+
+/* ================================================== */
+
+static void
 parse_ut1(char *line)
 {
   ut1 = 1;
   if (sscanf(line, "%lf", &ut1_offset) != 1) {
-      bulletin_a_path = line;
-      CNF_SetUT1FromBulletinA();
+    bulletin_a_path = line;
+    set_dut1_adjust_timeout();
   }
 }
 
@@ -2707,7 +2721,7 @@ CNF_GetUT1Offset(void)
 /* ================================================== */
 
 void
-CNF_SetUT1FromBulletinA(void)
+CNF_SetUT1FromBulletinA(void *arg)
 {
   FILE *in;
   char line[256];
@@ -2763,4 +2777,6 @@ CNF_SetUT1FromBulletinA(void)
   if (mjd < mjd_today)
     LOG(LOGS_WARN, "Bulletin A is too old, using the latest available date");
   fclose(in);
+
+  set_dut1_adjust_timeout();
 }

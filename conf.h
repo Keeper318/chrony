@@ -31,6 +31,7 @@
 #include "addressing.h"
 #include "local.h"
 #include "reference.h"
+#include "sched.h"
 #include "sources.h"
 
 extern void CNF_Initialise(int restarted, int client_only);
@@ -177,6 +178,6 @@ extern int CNF_GetNoCertTimeCheck(void);
 
 extern int CNF_GetUT1(void);
 extern double CNF_GetUT1Offset(void);
-extern void CNF_SetUT1FromBulletinA(void);
+extern void CNF_SetUT1FromBulletinA(void *arg);
 
 #endif /* GOT_CONF_H */
