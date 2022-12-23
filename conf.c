@@ -1551,7 +1551,7 @@ parse_ut1(char *line)
   ut1 = 1;
   if (sscanf(line, "%lf", &ut1_offset) != 1) {
     bulletin_a_path = line;
-    set_dut1_adjust_timeout();
+    CNF_SetUT1FromBulletinA(NULL);
   }
 }
 
@@ -2750,7 +2750,7 @@ CNF_SetUT1FromBulletinA(void *arg)
     token = line;
     for (i = 0; i <= mjd_index || i <= dut1_index; i++) {
       token_end = strchr(token, BULLETIN_A_CSV_SEPARATOR[0]);
-      if (token_end != NULL)
+      if (token_end != NULL || (token_end = strchr(token, '\n')) != NULL)
         *token_end = '\0';
       if (i == mjd_index)
         mjd = strtol(token, NULL, 10);
