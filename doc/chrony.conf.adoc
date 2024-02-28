@@ -348,6 +348,8 @@ field should be enabled only for servers known to be running *chronyd* version
 These options force *chronyd* to use only IPv4 or IPv6 addresses respectively
 for this source. They do not override the *-4* or *-6* option on the *chronyd*
 command line.
+*ut1*:::
+This option specifies that the server operates in UT1 time scale. (NTP protocol itself has no information about the time scale and assumes usage of UTC). This allows to synchronise time correctly with both UTC and UT1 time sources.
 
 {blank}:::
 
