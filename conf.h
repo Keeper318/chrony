@@ -157,6 +157,12 @@ typedef struct {
   double rx_comp;
 } CNF_HwTsInterface;
 
+typedef enum {
+  CNF_UT1_CONSTANT,
+  CNF_UT1_BULLETINA,
+  CNF_UT1_GPSD,
+} CNF_UT1_Source;
+
 extern int CNF_GetHwTsInterface(unsigned int index, CNF_HwTsInterface **iface);
 extern double CNF_GetHwTsTimeout(void);
 
@@ -177,6 +183,7 @@ extern int CNF_GetNoSystemCert(void);
 extern int CNF_GetNoCertTimeCheck(void);
 
 extern int CNF_GetUT1(void);
+extern CNF_UT1_Source CNF_GetUT1Source(void);
 extern double CNF_GetUT1Offset(void);
 extern void CNF_SetUT1FromBulletinA(void *arg);
 

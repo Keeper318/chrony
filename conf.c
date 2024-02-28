@@ -326,8 +326,14 @@ static ARR_Instance broadcasts;
 /* Flag set if UT1 mode is enabled */
 static int ut1 = 0;
 
+/* How to obtain dUT1 constant */
+static CNF_UT1_Source ut1_source;
+
 /* dUT1 constant */
-static double ut1_offset = 0.0; /* in seconds */
+static double dut1 = 0.0; /* in seconds */
+
+/* dUT1 change per second for linear interpolation */
+static double ddut1 = 0.0; /* in seconds */
 
 /* Path to IERS Bulletin A CSV file which stores dUT1 values */
 static char *bulletin_a_path = NULL;
@@ -501,6 +507,7 @@ CNF_Finalise(void)
   Free(tempcomp_point_file);
   Free(nts_dump_dir);
   Free(nts_ntp_server);
+  Free(bulletin_a_path);
 }
 
 /* ================================================== */
@@ -1548,11 +1555,21 @@ set_dut1_adjust_timeout()
 static void
 parse_ut1(char *line)
 {
-  ut1 = 1;
-  if (sscanf(line, "%lf", &ut1_offset) != 1) {
-    bulletin_a_path = line;
-    CNF_SetUT1FromBulletinA(NULL);
+  char *param = CPS_SplitWord(line);
+
+  if (!strcasecmp(line, "const")) {
+    ut1_source = CNF_UT1_CONSTANT;
+    if (sscanf(param, "%lf", &dut1) != 1)
+      command_parse_error();
+  } else if (!strcasecmp(line, "bulletina")) {
+    ut1_source = CNF_UT1_BULLETINA;
+    bulletin_a_path = Strdup(param);
+  } else {
+    other_parse_error("Invalid ut1 option");
+    return;
   }
+
+  ut1 = 1;
 }
 
 /* ================================================== */
@@ -2712,10 +2729,28 @@ CNF_GetUT1(void)
 
 /* ================================================== */
 
+CNF_UT1_Source
+CNF_GetUT1Source(void)
+{
+  return ut1_source;
+}
+
+/* ================================================== */
+
 double
 CNF_GetUT1Offset(void)
 {
-  return ut1_offset;
+  struct timespec now;
+  time_t last_midnight_sec;
+  double offset;
+
+  if (ut1_source == CNF_UT1_BULLETINA)
+    CNF_SetUT1FromBulletinA(NULL);
+  LCL_ReadRawTime(&now);
+  last_midnight_sec = now.tv_sec / (24 * 3600) * (24 * 3600);
+  offset = dut1 + (double)(now.tv_sec - last_midnight_sec) * ddut1;
+  LOG(LOGS_INFO, "Current dUT1: %g", offset);
+  return offset;
 }
 
 /* ================================================== */
@@ -2725,7 +2760,8 @@ CNF_SetUT1FromBulletinA(void *arg)
 {
   FILE *in;
   char line[256];
-  int i, mjd, mjd_today, mjd_index, dut1_index, read_dut1;
+  int i, mjd_index, dut1_index, read_dut1, need_ddut1, got_ddut1;
+  time_t mjd, mjd_today;
   char *token, *token_end, *endptr;
   struct timespec now;
 
@@ -2745,6 +2781,8 @@ CNF_SetUT1FromBulletinA(void *arg)
   LCL_ReadRawTime(&now);
   mjd = INT_MIN;
   mjd_today = now.tv_sec / 86400 + 40587;
+  need_ddut1 = 0;
+  got_ddut1 = 0;
   while (fgets(line, sizeof(line), in)) {
     read_dut1 = 0;
     token = line;
@@ -2755,7 +2793,13 @@ CNF_SetUT1FromBulletinA(void *arg)
       if (i == mjd_index)
         mjd = strtol(token, NULL, 10);
       else if (i == dut1_index) {
-        ut1_offset = strtod(token, &endptr);
+        if (!need_ddut1)
+          dut1 = strtod(token, &endptr);
+        else {
+          ddut1 = (strtod(token, &endptr) - dut1) / 86400;
+          need_ddut1 = 0;
+          got_ddut1 = 1;
+        }
         read_dut1 = *endptr == '\0';
       }
       if (token_end == NULL)
@@ -2765,15 +2809,21 @@ CNF_SetUT1FromBulletinA(void *arg)
     if (mjd >= mjd_today) {
       if (!read_dut1)
         LOG_FATAL("Invalid Bulletin A");
-      if (mjd > mjd_today)
+      if (!got_ddut1 && mjd > mjd_today)
         LOG(LOGS_WARN, "Bulletin A is too new, using the earliest available date");
-      break;
+      if (!need_ddut1) {
+        if (got_ddut1)
+          break;
+        need_ddut1 = 1;
+      }
     }
   }
 
   if (mjd == INT_MIN)
     LOG_FATAL("Invalid Bulletin A");
-  LOG(LOGS_INFO, "Got dUT1 = %g from Bulletin A", ut1_offset);
+  LOG(LOGS_INFO, "Got dUT1 = %g from Bulletin A", dut1);
+  if (ddut1)
+    LOG(LOGS_INFO, "Got ddUT1 = %g from Bulletin A", ddut1);
   if (mjd < mjd_today)
     LOG(LOGS_WARN, "Bulletin A is too old, using the latest available date");
   fclose(in);
