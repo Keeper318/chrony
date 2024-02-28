@@ -29,6 +29,7 @@
 
 #include "sysincl.h"
 
+#include "conf.h"
 #include "refclock.h"
 #include "logging.h"
 #include "util.h"
@@ -51,8 +52,11 @@ struct sock_sample {
   /* 0 - normal, 1 - insert leap second, 2 - delete leap second */
   int leap;
 
-  /* Padding, ignored */
-  int _pad;
+  /* dUT1 B1 constant from GLONASS */
+  uint16_t dut1_b1;
+
+  /* dUT1 B2 constant from GLONASS */
+  uint16_t dut1_b2;
 
   /* Protocol identifier (0x534f434b) */
   int magic;
@@ -139,6 +143,8 @@ static void read_sample(int sockfd, int event, void *anything)
   } else {
     RCL_AddSample(instance, &sys_ts, &ref_ts, sample.leap);
   }
+
+  CNF_SetUT1FromGPSD(sample.dut1_b1, sample.dut1_b2);
 }
 
 static int sock_initialise(RCL_Instance instance)
