@@ -1462,6 +1462,23 @@ where the _/etc/chrony.tempcomp_ file could have
 Valid measurements with corresponding compensations are logged to the
 _tempcomp.log_ file if enabled by the <<log,*log tempcomp*>> directive.
 
+[[ut1]]*ut1* _source_ _parameter_::
+The *ut1* directive sets the local time scale to UT1. It has two mandatory parameters: _dUT1_ value source and a source-specific parameter.
++
+UT1 differs from UTC by the variable offset _dUT1_ (in seconds) which is defined as
++
+----
+dUT1 = UT1 - UTC
+----
++
+So, _dUT1_ value is needed in order to determine UT1 time. This value will be obtained from the specified source. The following sources are available:
++
+*const*:::
+Constant value. The parameter is the actual value.
++
+*bulletina*:::
+Value is calculated from Bulletin A csv file using the linear interpolation. The parameter is the path to csv file.
+
 === NTP server
 
 [[allow]]*allow* [*all*] [_subnet_]::
