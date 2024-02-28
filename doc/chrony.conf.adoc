@@ -1478,6 +1478,9 @@ Constant value. The parameter is the actual value.
 +
 *bulletina*:::
 Value is calculated from Bulletin A csv file using the linear interpolation. The parameter is the path to csv file.
++
+*gpsd*:::
+Value is calculated using B1 and B2 constants from GPSD. The parameter is omitted with this source.
 
 === NTP server
 
