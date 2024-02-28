@@ -186,5 +186,6 @@ extern int CNF_GetUT1(void);
 extern CNF_UT1_Source CNF_GetUT1Source(void);
 extern double CNF_GetUT1Offset(void);
 extern void CNF_SetUT1FromBulletinA(void *arg);
+extern void CNF_SetUT1FromGPSD(uint16_t b1, uint16_t b2);
 
 #endif /* GOT_CONF_H */

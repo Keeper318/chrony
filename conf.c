@@ -1564,6 +1564,8 @@ parse_ut1(char *line)
   } else if (!strcasecmp(line, "bulletina")) {
     ut1_source = CNF_UT1_BULLETINA;
     bulletin_a_path = Strdup(param);
+  } else if (!strcasecmp(line, "gpsd")) {
+    ut1_source = CNF_UT1_GPSD;
   } else {
     other_parse_error("Invalid ut1 option");
     return;
@@ -2829,4 +2831,18 @@ CNF_SetUT1FromBulletinA(void *arg)
   fclose(in);
 
   set_dut1_adjust_timeout();
+}
+
+/* ================================================== */
+
+void
+CNF_SetUT1FromGPSD(uint16_t b1, uint16_t b2)
+{
+  dut1 = (double)(b1 & ((1 << 10) - 1)) / (1 << 10);
+  if (b1 >> 10)  /* Sign bit */
+    dut1 = -dut1;
+  
+  ddut1 = ((double)(b2 & ((1 << 15) - 1)) / (1 << 12) - 0.5) / (24 * 3600);
+  if (b2 >> 15)  /* Sign bit */
+    ddut1 = -ddut1;
 }
